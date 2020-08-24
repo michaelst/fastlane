@@ -20,6 +20,7 @@ module Fastlane
         GithubApiAction.run(
           server_url: params[:api_url],
           api_token: params[:api_token],
+          github_token: params[:github_token],
           http_method: 'POST',
           path: "repos/#{params[:repo]}/pulls",
           body: payload,
@@ -60,6 +61,7 @@ module Fastlane
         GithubApiAction.run(
           server_url: params[:api_url],
           api_token: params[:api_token],
+          github_token: params[:github_token],
           http_method: 'PATCH',
           path: "repos/#{params[:repo]}/issues/#{number}",
           body: payload,
@@ -79,6 +81,7 @@ module Fastlane
         GithubApiAction.run(
           server_url: params[:api_url],
           api_token: params[:api_token],
+          github_token: params[:github_token],
           http_method: 'POST',
           path: "repos/#{params[:repo]}/issues/#{number}/assignees",
           body: payload,
@@ -103,6 +106,7 @@ module Fastlane
         GithubApiAction.run(
           server_url: params[:api_url],
           api_token: params[:api_token],
+          github_token: params[:github_token],
           http_method: 'POST',
           path: "repos/#{params[:repo]}/pulls/#{number}/requested_reviewers",
           body: payload,
@@ -124,6 +128,7 @@ module Fastlane
         GithubApiAction.run(
           server_url: params[:api_url],
           api_token: params[:api_token],
+          github_token: params[:github_token],
           http_method: 'PATCH',
           path: "repos/#{params[:repo]}/issues/#{number}",
           body: payload,
@@ -161,7 +166,16 @@ module Fastlane
                                        default_value: ENV["GITHUB_API_TOKEN"],
                                        default_value_dynamic: true,
                                        is_string: true,
-                                       optional: false),
+                                       optional: true),
+          FastlaneCore::ConfigItem.new(key: :github_token,
+                                       env_name: "GITHUB_PULL_REQUEST_GITHUB_TOKEN",
+                                       description: "Token provided by GitHub Actions job - set on env `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`.",
+                                       sensitive: true,
+                                       code_gen_sensitive: true,
+                                       default_value: ENV["GITHUB_TOKEN"],
+                                       default_value_dynamic: true,
+                                       is_string: true,
+                                       optional: true),
           FastlaneCore::ConfigItem.new(key: :repo,
                                        env_name: "GITHUB_PULL_REQUEST_REPO",
                                        description: "The name of the repository you want to submit the pull request to",
@@ -246,7 +260,8 @@ module Fastlane
       def self.example_code
         [
           'create_pull_request(
-            api_token: "secret",                # optional, defaults to ENV["GITHUB_API_TOKEN"]
+            api_token: "secret",                # optional, defaults to ENV["GITHUB_API_TOKEN"] (passed as basic auth)
+            github_token: "secret",             # optional, defaults to ENV["GITHUB_TOKEN"] (passed as bearer auth)
             repo: "fastlane/fastlane",
             title: "Amazing new feature",
             head: "my-feature",                 # optional, defaults to current branch name

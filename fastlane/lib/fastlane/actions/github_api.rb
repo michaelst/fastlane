@@ -13,7 +13,7 @@ module Fastlane
 
           http_method = (params[:http_method] || 'GET').to_s.upcase
           url = construct_url(params[:server_url], params[:path], params[:url])
-          headers = construct_headers(params[:api_token], params[:headers])
+          headers = construct_headers(params[:api_token], params[:github_token], params[:headers])
           payload = construct_body(params[:body], params[:raw_body])
           error_handlers = params[:error_handlers] || {}
           secure = params[:secure]
@@ -94,7 +94,16 @@ module Fastlane
                                          is_string: true,
                                          default_value: ENV["GITHUB_API_TOKEN"],
                                          default_value_dynamic: true,
-                                         optional: false),
+                                         optional: true),
+            FastlaneCore::ConfigItem.new(key: :github_token,
+                                         env_name: "FL_GITHUB_GITHUB_TOKEN",
+                                         description: "Token provided by GitHub Actions job - set on env `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`.",
+                                         sensitive: true,
+                                         code_gen_sensitive: true,
+                                         is_string: true,
+                                         default_value: ENV["GITHUB_TOKEN"],
+                                         default_value_dynamic: true,
+                                         optional: true),
             FastlaneCore::ConfigItem.new(key: :http_method,
                                          env_name: "FL_GITHUB_API_HTTP_METHOD",
                                          description: "The HTTP method. e.g. GET / POST",
@@ -166,7 +175,8 @@ module Fastlane
           [
             'result = github_api(
             server_url: "https://api.github.com",
-            api_token: ENV["GITHUB_TOKEN"],
+            api_token: ENV["GITHUB_API_TOKEN"],
+            github_token: ENV["GITHUB_TOKEN"],
             http_method: "GET",
             path: "/repos/:owner/:repo/readme",
             body: { ref: "master" }
@@ -174,7 +184,8 @@ module Fastlane
             '# Alternatively call directly with optional error handling or block usage
             GithubApiAction.run(
               server_url: "https://api.github.com",
-              api_token: ENV["GITHUB_TOKEN"],
+              api_token: ENV["GITHUB_API_TOKEN"],
+              github_token: ENV["GITHUB_TOKEN"],
               http_method: "GET",
               path: "/repos/:owner/:repo/readme",
               error_handlers: {
@@ -202,10 +213,11 @@ module Fastlane
 
         private
 
-        def construct_headers(api_token, overrides)
+        def construct_headers(api_token, github_token, overrides)
           require 'base64'
           headers = { 'User-Agent' => 'fastlane-github_api' }
           headers['Authorization'] = "Basic #{Base64.strict_encode64(api_token)}" if api_token
+          headers['Authorization'] = "Bearer #{github_token}" if github_token
           headers.merge(overrides || {})
         end
 
